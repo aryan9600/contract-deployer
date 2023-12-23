@@ -18,6 +18,7 @@ export default function FileUpload() {
     };
 
     const handleSubmit = async () => {
+        // activate spinner
         setIsLoading(true);
         if (file) {
             const formData = new FormData();
@@ -25,6 +26,7 @@ export default function FileUpload() {
             formData.append('textField', textField);
 
             try {
+                // Send the file and the private key to the server side function.
                 const response = await fetch('/api/deployer', {
                     method: 'POST',
                     body: formData,
@@ -38,9 +40,11 @@ export default function FileUpload() {
             } catch (error) {
                 console.log(error);
             } finally {
+                // deactivate spinner
                 setIsLoading(false);
             }
         } else {
+            // deactivate spinner
             setIsLoading(false);
         }
     };
@@ -67,7 +71,7 @@ export default function FileUpload() {
     );
 }
 
-// The modal to display after calories are added or subtracted.
+// Modal to display the wasm hash and contract ID.
 const Modal = ({ isOpen, onClose, wasmHash, contractID }) => {
     if (!isOpen) {
         return null;

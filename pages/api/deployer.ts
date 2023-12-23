@@ -29,19 +29,24 @@ export default function handler(req: NextApiRequest, res: NextApiResponse<Contra
             }
 
             try {
+                // Get the private key
                 const pk = fields.textField[0];
 
                 const file = files.file;
+                // Get the wasm file buffer
                 const data = fs.readFileSync(file[0].filepath);
 
+                // Calculate the hash and construct a upload contract wasm operation.
                 const hash = sdk.hash(data);
                 let op = sdk.Operation.uploadContractWasm({ wasm: data });
 
+                // To store the contract hash returned by the RPC.
                 let contractHash = '';
                 const sourceKeypair = sdk.Keypair.fromSecret(pk);
                 const sourcePublicKey = sourceKeypair.publicKey();
                 const account = await server.getAccount(sourcePublicKey);
 
+                // Build, prepare, sign and send the upload contract wasm transaction.
                 let tx = new sdk.TransactionBuilder(account, { fee: sdk.BASE_FEE })
                     .setNetworkPassphrase(sdk.Networks.FUTURENET)
                     .setTimeout(30)
@@ -57,6 +62,7 @@ export default function handler(req: NextApiRequest, res: NextApiResponse<Contra
                             console.log("continuing");
                             continue
                         } else {
+                            // The first 16 characters are of no importance.
                             contractHash = val.returnValue.toXDR('hex').slice(16);
                             console.log("contract hash", contractHash);
                             break;
@@ -67,12 +73,16 @@ export default function handler(req: NextApiRequest, res: NextApiResponse<Contra
                     return res.status(500).send('Error uploading the contract wasm file');
                 }
 
+                // The operation to create a contract on the network.
                 let contractOp = sdk.Operation.createCustomContract({
                     address: new sdk.Address(sourcePublicKey),
                     wasmHash: hash,
                 });
 
+                // To store the contract ID.
                 let contractID = '';
+
+                // Build, prepare, sign and send the create contract transaction.
                 let contractTx = new sdk.TransactionBuilder(account, { fee: sdk.BASE_FEE })
                     .setNetworkPassphrase(sdk.Networks.FUTURENET)
                     .setTimeout(30)
@@ -93,8 +103,6 @@ export default function handler(req: NextApiRequest, res: NextApiResponse<Contra
                             break;
                         }
                     }
-                    // for (let i = 0; i < 20; i++) {
-                    // }
                 } catch (error) {
                     console.log("error creating", error);
                     return res.status(500).send('Error deploying the contract');
