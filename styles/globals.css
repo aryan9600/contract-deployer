@@ -194,7 +194,7 @@ button:hover {
     border: 2px solid #4CAF50;
 }
 
-input[type="text"] {
+input[type="password"] {
     padding: 12px 20px;
     margin: 25px 0;
     box-sizing: border-box;

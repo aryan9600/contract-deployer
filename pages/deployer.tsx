@@ -57,7 +57,7 @@ export default function FileUpload() {
             <div className='container'>
                 <h2> Your private key </h2>
                 <p> (its not logged or stored! 😉) </p>
-                <input type="text" value={textField} onChange={handleTextChange} />
+                <input type="password" value={textField} onChange={handleTextChange} />
                 <h2> Upload the wasm file </h2>
                 <input type="file" onChange={handleFileChange} />
                 {isLoading ? (
