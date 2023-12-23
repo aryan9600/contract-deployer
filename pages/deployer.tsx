@@ -31,6 +31,7 @@ export default function FileUpload() {
                 });
 
                 const body = await response.json();
+                console.log(body);
                 setWasmHash(body.wasmHash);
                 setContractID(body.id);
                 setModalOpen(true);

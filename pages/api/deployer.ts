@@ -51,12 +51,16 @@ export default function handler(req: NextApiRequest, res: NextApiResponse<Contra
                     const preparedTransaction = await server.prepareTransaction(tx);
                     preparedTransaction.sign(sourceKeypair);
                     const uploadResp = await server.sendTransaction(preparedTransaction);
-                    for (let i = 0; i < 10; i++) {
+                    while (true) {
                         const val = await server.getTransaction(uploadResp.hash);
                         if (val.returnValue === undefined || val.returnValue === null) {
+                            console.log("continuing");
                             continue
+                        } else {
+                            contractHash = val.returnValue.toXDR('hex').slice(16);
+                            console.log("contract hash", contractHash);
+                            break;
                         }
-                        contractHash = val.returnValue.toXDR('hex').slice(16);
                     }
                 } catch (error) {
                     console.log("error uploading", error);
@@ -78,13 +82,19 @@ export default function handler(req: NextApiRequest, res: NextApiResponse<Contra
                     const preparedTransaction = await server.prepareTransaction(contractTx);
                     preparedTransaction.sign(sourceKeypair);
                     const contractResp = await server.sendTransaction(preparedTransaction);
-                    for (let i = 0; i < 10; i++) {
+                    while (true) {
                         const val = await server.getTransaction(contractResp.hash);
                         if (val.returnValue === undefined || val.returnValue === null) {
+                            console.log("continuing create");
                             continue
+                        } else {
+                            contractID = sdk.Address.contract(val.returnValue.address().contractId()).toString();
+                            console.log("contract id", contractID);
+                            break;
                         }
-                        contractID = sdk.Address.contract(val.returnValue.address().contractId()).toString();
                     }
+                    // for (let i = 0; i < 20; i++) {
+                    // }
                 } catch (error) {
                     console.log("error creating", error);
                     return res.status(500).send('Error deploying the contract');
