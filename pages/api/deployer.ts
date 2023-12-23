@@ -1,3 +1,5 @@
+import { NextApiRequest, NextApiResponse } from "next";
+
 const formidable = require('formidable');
 const fs = require('fs');
 const serverSdk = require('stellar-sdk/lib/soroban');
@@ -11,7 +13,12 @@ export const config = {
     },
 };
 
-export default function handler(req, res) {
+type ContractData = {
+    wasmHash: String
+    id: String
+}
+
+export default function handler(req: NextApiRequest, res: NextApiResponse<ContractData | String>) {
     if (req.method === 'POST') {
         const form = new formidable.IncomingForm();
 
@@ -22,10 +29,8 @@ export default function handler(req, res) {
             }
 
             try {
-                // Log text field
                 const pk = fields.textField[0];
 
-                // Log file content
                 const file = files.file;
                 const data = fs.readFileSync(file[0].filepath);
 
@@ -45,9 +50,9 @@ export default function handler(req, res) {
                 try {
                     const preparedTransaction = await server.prepareTransaction(tx);
                     preparedTransaction.sign(sourceKeypair);
-                    const submitTransactionResponse = await server.sendTransaction(preparedTransaction);
+                    const uploadResp = await server.sendTransaction(preparedTransaction);
                     for (let i = 0; i < 10; i++) {
-                        const val = await server.getTransaction(submitTransactionResponse.hash);
+                        const val = await server.getTransaction(uploadResp.hash);
                         if (val.returnValue === undefined || val.returnValue === null) {
                             continue
                         }
@@ -55,6 +60,7 @@ export default function handler(req, res) {
                     }
                 } catch (error) {
                     console.log("error uploading", error);
+                    return res.status(500).send('Error uploading the contract wasm file');
                 }
 
                 let contractOp = sdk.Operation.createCustomContract({
@@ -62,6 +68,7 @@ export default function handler(req, res) {
                     wasmHash: hash,
                 });
 
+                let contractID = '';
                 let contractTx = new sdk.TransactionBuilder(account, { fee: sdk.BASE_FEE })
                     .setNetworkPassphrase(sdk.Networks.FUTURENET)
                     .setTimeout(30)
@@ -70,21 +77,23 @@ export default function handler(req, res) {
                 try {
                     const preparedTransaction = await server.prepareTransaction(contractTx);
                     preparedTransaction.sign(sourceKeypair);
-                    const submitTransactionResponse = await server.sendTransaction(preparedTransaction);
+                    const contractResp = await server.sendTransaction(preparedTransaction);
                     for (let i = 0; i < 10; i++) {
-                        const val = await server.getTransaction(submitTransactionResponse.hash);
+                        const val = await server.getTransaction(contractResp.hash);
                         if (val.returnValue === undefined || val.returnValue === null) {
-                            console.log("continuing in create");
                             continue
                         }
+                        contractID = sdk.Address.contract(val.returnValue.address().contractId()).toString();
                     }
                 } catch (error) {
                     console.log("error creating", error);
-
+                    return res.status(500).send('Error deploying the contract');
                 }
 
-                console.log(contractHash);
-                res.status(201).send(contractHash);
+                res.status(201).send({
+                    wasmHash: contractHash,
+                    id: contractID
+                });
 
             } catch (error) {
                 console.error('Error processing form:', error);

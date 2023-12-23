@@ -4,6 +4,7 @@ export default function FileUpload() {
     const [file, setFile] = useState(null);
     const [textField, setTextField] = useState('');
     const [wasmHash, setWasmHash] = useState('');
+    const [contractID, setContractID] = useState('');
     const [isModalOpen, setModalOpen] = useState(false);
     const [isLoading, setIsLoading] = useState(false);
     const closeModal = () => setModalOpen(false);
@@ -23,26 +24,24 @@ export default function FileUpload() {
             formData.append('file', file);
             formData.append('textField', textField);
 
-            fetch('/api/deployer', {
-                method: 'POST',
-                body: formData,
-            }).then(response => {
-                response.text().then(body => {
-                    console.log("slc,ls");
-                    console.log(body);
-                    setWasmHash(body);
-                    setModalOpen(true);
-                }).catch(error => {
-                    console.log(error);
-                    setIsLoading(false);
-                })
-            }).catch(error => {
-                console.log(error);
-                setIsLoading(false);
-            });
+            try {
+                const response = await fetch('/api/deployer', {
+                    method: 'POST',
+                    body: formData,
+                });
 
+                const body = await response.json();
+                setWasmHash(body.wasmHash);
+                setContractID(body.id);
+                setModalOpen(true);
+            } catch (error) {
+                console.log(error);
+            } finally {
+                setIsLoading(false);
+            }
+        } else {
+            setIsLoading(false);
         }
-        setIsLoading(false);
     };
 
     return (
@@ -61,14 +60,14 @@ export default function FileUpload() {
                 ) : (
                     <button onClick={handleSubmit} disabled={isLoading}>Deploy</button>
                 )}
-                <Modal isOpen={isModalOpen} onClose={closeModal} wasm_hash={wasmHash} />
+                <Modal isOpen={isModalOpen} onClose={closeModal} wasmHash={wasmHash} contractID={contractID} />
             </div>
         </>
     );
 }
 
 // The modal to display after calories are added or subtracted.
-const Modal = ({ isOpen, onClose, wasm_hash }) => {
+const Modal = ({ isOpen, onClose, wasmHash, contractID }) => {
     if (!isOpen) {
         return null;
     }
@@ -76,8 +75,10 @@ const Modal = ({ isOpen, onClose, wasm_hash }) => {
     return (
         <div className="modal-backdrop">
             <div className="modal">
-                <h2> Contract deployed </h2>
-                <h3>WASM hash: {wasm_hash}</h3>
+                <h2> Contract deployed! </h2>
+                <br></br>
+                <h3>WASM hash: {wasmHash}</h3>
+                <h3>Contract ID: {contractID}</h3>
                 <div className="modal-actions">
                     <button onClick={onClose}>Close</button>
                 </div>
