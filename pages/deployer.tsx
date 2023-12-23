@@ -29,7 +29,7 @@ export default function FileUpload() {
                     method: 'POST',
                     body: formData,
                 });
-
+                console.log(response.statusText)
                 const body = await response.json();
                 console.log(body);
                 setWasmHash(body.wasmHash);
