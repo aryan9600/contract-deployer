@@ -16,7 +16,7 @@ impl ContractDeployer {
         env: Env,
         user: Address,
         name: String,
-        wasm_hash: String,
+        contract_id: String,
         metadata: String,
         time: String,
     ) {
@@ -29,17 +29,17 @@ impl ContractDeployer {
         if let Some(mut app) = val {
             let res: Option<Vec<(String, String, String)>> = app.get(name.clone());
             if let Some(mut contracts) = res {
-                contracts.push_back((wasm_hash, metadata, time));
+                contracts.push_back((contract_id, metadata, time));
                 app.set(name, contracts);
                 env.storage().instance().set(&key, &app);
             } else {
-                let contracts = vec![&env, (wasm_hash, metadata, time)];
+                let contracts = vec![&env, (contract_id, metadata, time)];
                 app.set(name, contracts);
                 env.storage().instance().set(&key, &app);
             }
         } else {
             let mut app = Map::new(&env);
-            let contracts = vec![&env, (wasm_hash, metadata, time)];
+            let contracts = vec![&env, (contract_id, metadata, time)];
             app.set(name, contracts);
             env.storage().instance().set(&key, &app);
         }
